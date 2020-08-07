@@ -1,5 +1,6 @@
 const express = require("express");
 const path = require("path");
+const exphbs = require("express-handlebars");
 const logger = require("./middleware/logger");
 const members = require("./Members");
 
@@ -8,22 +9,27 @@ const app = express();
 //Init middleware
 // app.use(logger);
 
-//Get all members
-app.get("/api/members", (req, res) => res.json(members));
+//Handlebars Middleware
+app.engine("handlebars", exphbs({ defaultLayout: "main" }));
+app.set("view engine", "handlebars");
 
-//Get single member
-app.get("/api/members/:id", (req, res) => {
-  const found = members.some((member) => member.id === parseInt(req.params.id));
+//Body Parser Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
-  if (found) {
-    res.json(members.filter((member) => member.id === parseInt(req.params.id)));
-  } else {
-    res.status(400).json({ msg: `No member with the id of ${req.params.id}` });
-  }
-});
+//Homepage Route (using handlebars)
+app.get("/", (req, res) =>
+  res.render("index", {
+    title: "Member App",
+    members,
+  })
+);
 
 //Set static folder
 app.use(express.static(path.join(__dirname, "public")));
+
+//Members API route
+app.use("/api/members", require("./routes/api/members"));
 
 const PORT = process.env.PORT || 5000; //look at the environment of the user first
 
